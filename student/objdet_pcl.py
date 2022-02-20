@@ -14,6 +14,8 @@
 import cv2
 import numpy as np
 import torch
+import zlib
+import open3d as o3d
 
 # add project directory to python path to enable relative imports
 import os
@@ -29,23 +31,38 @@ from tools.waymo_reader.simple_waymo_open_dataset_reader import dataset_pb2, lab
 # object detection tools and helper functions
 import misc.objdet_tools as tools
 
-
 # visualize lidar point-cloud
-def show_pcl(pcl):
+def show_pcl(pcl, cnt_frame):
 
     ####### ID_S1_EX2 START #######     
     #######
     print("student task ID_S1_EX2")
+    pcl = pcl[:,:3]
 
     # step 1 : initialize open3d with key callback and create window
+    vis = o3d.visualization.VisualizerWithKeyCallback()
+    vis.create_window()
     
     # step 2 : create instance of open3d point-cloud class
+    pcd = o3d.geometry.PointCloud()
 
     # step 3 : set points in pcd instance by converting the point-cloud into 3d vectors (using open3d function Vector3dVector)
+    pcd.points = o3d.utility.Vector3dVector(pcl)
 
     # step 4 : for the first frame, add the pcd instance to visualization using add_geometry; for all other frames, use update_geometry instead
+    if(cnt_frame == 0):
+        vis.add_geometry(pcd)
+    else:
+        vis.update_geometry(pcd)
     
     # step 5 : visualize point cloud and keep window open until right-arrow is pressed (key-code 262)
+    def callback(vis):
+        # vis.clear_geometries()
+        vis.destroy_window()
+        return False
+
+    vis.register_key_callback(262, callback)
+    vis.run()
 
     #######
     ####### ID_S1_EX2 END #######     
@@ -59,18 +76,30 @@ def show_range_image(frame, lidar_name):
     print("student task ID_S1_EX1")
 
     # step 1 : extract lidar data and range image for the roof-mounted lidar
+    lidar = [obj for obj in frame.lasers if obj.name == lidar_name][0] # get laser data structure from frame
+    ri = []
+    if len(lidar.ri_return1.range_image_compressed) > 0: # use first response
+        ri = dataset_pb2.MatrixFloat()
+        ri.ParseFromString(zlib.decompress(lidar.ri_return1.range_image_compressed))
+        ri = np.array(ri.data).reshape(ri.shape.dims)
     
     # step 2 : extract the range and the intensity channel from the range image
-    
+    ri_range = ri[:,:,0]
+    ri_intensity = ri[:,:,1]
+
     # step 3 : set values <0 to zero
+    ri_range[ri_range<0]=0.0
+    ri_intensity[ri_intensity<0]=0.0
     
     # step 4 : map the range channel onto an 8-bit scale and make sure that the full range of values is appropriately considered
-    
+    ri_range = ri_range * 255 / (np.amax(ri_range) - np.amin(ri_range))
+
     # step 5 : map the intensity channel onto an 8-bit scale and normalize with the difference between the 1- and 99-percentile to mitigate the influence of outliers
-    
+    ri_intensity = np.amax(ri_intensity)/2 * ri_intensity * 255 / (np.amax(ri_intensity) - np.amin(ri_intensity))
+
     # step 6 : stack the range and intensity image vertically using np.vstack and convert the result to an unsigned 8-bit integer
-    
-    img_range_intensity = [] # remove after implementing all steps
+    img_range_intensity = np.vstack((ri_range, ri_intensity))
+
     #######
     ####### ID_S1_EX1 END #######     
     
