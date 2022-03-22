@@ -175,16 +175,14 @@ def bev_from_pcl(lidar_pcl, configs):
     minv = np.min(lidar_pcl_top[:,3])
     maxv = np.max(lidar_pcl_top[:,3])
     print(minv, maxv)
-    intensity_map_ps = np.zeros((configs.bev_height + 1, configs.bev_width + 1))
-    intensity_map_ps[np.int_(lidar_pcl_top[:, 0]), np.int_(lidar_pcl_top[:, 1])] = lidar_pcl_top[:, 3]
 
     lidar_pcl_top_copy = np.copy(lidar_pcl_top[:,3])
 
-    pbot = np.percentile(intensity_map_ps.flatten(), 10)
-    ptop = np.percentile(intensity_map_ps.flatten(), 90)
-    mean = np.mean(intensity_map_ps.flatten())
-    std = np.std(intensity_map_ps.flatten())
-    devs = 2
+    pbot = np.percentile(lidar_pcl_top_copy, 10)
+    ptop = np.percentile(lidar_pcl_top_copy, 90)
+    mean = np.mean(lidar_pcl_top_copy)
+    std = np.std(lidar_pcl_top_copy)
+    devs = 3
     min = 0 if (mean - devs * std) < 0 else mean - devs * std
     max = 1 if (mean + devs * std) > 1 else mean + devs * std
 
@@ -198,9 +196,12 @@ def bev_from_pcl(lidar_pcl, configs):
     scale = np.frompyfunc(lambda x, min, max: 1 if x > max else (x - min) / (max - min), 3, 1)
     # intensity_map = scale(intensity_map_ps, min, max).astype(float)
 
-    intensity_map = scale(intensity_map_ps, minv, maxv)
+    lidar_pcl_top_copy_post = scale(lidar_pcl_top_copy, min, max)
 
-    analyze({'before': intensity_map_ps.flatten(), 'after': intensity_map.flatten()}, title='Intensity Distribution', nqp=False)
+    intensity_map = np.zeros((configs.bev_height + 1, configs.bev_width + 1))
+    intensity_map[np.int_(lidar_pcl_top[:, 0]), np.int_(lidar_pcl_top[:, 1])] = lidar_pcl_top_copy_post
+
+    analyze({'before': lidar_pcl_top_copy, 'after': lidar_pcl_top_copy_post}, title='Intensity Distribution', nqp=False)
 
     ## step 5 : temporarily visualize the intensity map using OpenCV to make sure that vehicles separate well from the background
     img_intensity = intensity_map * 255
