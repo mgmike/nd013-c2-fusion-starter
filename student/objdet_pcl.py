@@ -16,6 +16,7 @@ import numpy as np
 import torch
 import zlib
 import open3d as o3d
+import scipy.stats as st
 
 # add project directory to python path to enable relative imports
 import os
@@ -27,6 +28,8 @@ sys.path.append(os.path.normpath(os.path.join(SCRIPT_DIR, PACKAGE_PARENT)))
 # waymo open dataset reader
 from tools.waymo_reader.simple_waymo_open_dataset_reader import utils as waymo_utils
 from tools.waymo_reader.simple_waymo_open_dataset_reader import dataset_pb2, label_pb2
+
+from sci_analysis import analyze
 
 # object detection tools and helper functions
 import misc.objdet_tools as tools
@@ -169,12 +172,38 @@ def bev_from_pcl(lidar_pcl, configs):
     ##          make sure that the intensity is scaled in such a way that objects of interest (e.g. vehicles) are clearly visible    
     ##          also, make sure that the influence of outliers is mitigated by normalizing intensity on the difference between the max. and min. value within the point cloud
     # intensity_map[np.int_(lidar_pcl_top[:, 0]), np.int_(lidar_pcl_top[:, 1])] = lidar_pcl_top[:, 3] / (np.amax(lidar_pcl_top[:, 3]) - np.amin(lidar_pcl_top[:, 3]))
-    span = np.percentile(lidar_pcl_top[:, 3], 93) - np.percentile(lidar_pcl_top[:, 3], 10)
-    print(span)
-    intensity_map[np.int_(lidar_pcl_top[:, 0]), np.int_(lidar_pcl_top[:, 1])] = lidar_pcl_top[:, 3] / span
+    minv = np.min(lidar_pcl_top[:,3])
+    maxv = np.max(lidar_pcl_top[:,3])
+    print(minv, maxv)
+    intensity_map_ps = np.zeros((configs.bev_height + 1, configs.bev_width + 1))
+    intensity_map_ps[np.int_(lidar_pcl_top[:, 0]), np.int_(lidar_pcl_top[:, 1])] = lidar_pcl_top[:, 3]
+
+    lidar_pcl_top_copy = np.copy(lidar_pcl_top[:,3])
+
+    pbot = np.percentile(intensity_map_ps.flatten(), 10)
+    ptop = np.percentile(intensity_map_ps.flatten(), 90)
+    mean = np.mean(intensity_map_ps.flatten())
+    std = np.std(intensity_map_ps.flatten())
+    devs = 2
+    min = 0 if (mean - devs * std) < 0 else mean - devs * std
+    max = 1 if (mean + devs * std) > 1 else mean + devs * std
+
+    span = ptop - pbot
+    print('span: %f, mean: %f, standard deviation: %f' %(span, mean, std))
+    print('percentile, 90: %f, 10: %f' %(ptop, pbot))
+    print('lower std: %f, upper std: %f' %(min, max))
+
+    # scale_log = np.frompyfunc(lambda x: 0 if x == 1 else -1 / np.log10(x))
+
+    scale = np.frompyfunc(lambda x, min, max: 1 if x > max else (x - min) / (max - min), 3, 1)
+    # intensity_map = scale(intensity_map_ps, min, max).astype(float)
+
+    intensity_map = scale(intensity_map_ps, minv, maxv)
+
+    analyze({'before': intensity_map_ps.flatten(), 'after': intensity_map.flatten()}, title='Intensity Distribution', nqp=False)
 
     ## step 5 : temporarily visualize the intensity map using OpenCV to make sure that vehicles separate well from the background
-    img_intensity = intensity_map * 256
+    img_intensity = intensity_map * 255
     img_intensity = img_intensity.astype(np.uint8)
     while (1):
         cv2.imshow('img_intensity', img_intensity)

@@ -13,6 +13,7 @@
 # general package imports
 import numpy as np
 import torch
+import time
 from easydict import EasyDict as edict
 
 # add project directory to python path to enable relative imports
@@ -25,6 +26,7 @@ sys.path.append(os.path.normpath(os.path.join(SCRIPT_DIR, PACKAGE_PARENT)))
 # model-related
 from tools.objdet_models.resnet.models import fpn_resnet
 from tools.objdet_models.resnet.utils.evaluation_utils import decode, post_processing 
+from tools.objdet_models.resnet.utils.torch_utils import _sigmoid
 
 from tools.objdet_models.darknet.models.darknet2pytorch import Darknet as darknet
 from tools.objdet_models.darknet.utils.evaluation_utils import post_processing_v2
@@ -67,8 +69,10 @@ def load_configs_model(model_name='darknet', configs=None):
         configs.arch = 'fpn_resnet'
         configs.num_layers = 18
         configs.batch_size = 4
+        configs.K = 50
         # configs.cfgfile = os.path.join(configs.model_path, 'config', 'complex_yolov4.cfg')
-        configs.conf_thresh = 0.2
+        configs.conf_thresh = 0.5
+        configs.peak_thresh = 0.2
         configs.distributed = False
         configs.img_size = 608
         configs.nms_thresh = 0.4
@@ -174,6 +178,9 @@ def create_model(configs):
 
     return model
 
+def time_synchronized():
+    torch.cuda.synchronize() if torch.cuda.is_available() else None
+    return time.time()
 
 # detect trained objects in birds-eye view
 def detect_objects(input_bev_maps, model, configs):
@@ -206,6 +213,19 @@ def detect_objects(input_bev_maps, model, configs):
             #######
             print("student task ID_S3_EX1-5")
 
+            # perform post-processing
+
+            # t1 = time_synchronized()
+            outputs['hm_cen'] = _sigmoid(outputs['hm_cen'])
+            outputs['cen_offset'] = _sigmoid(outputs['cen_offset'])
+            # detections size (batch_size, K, 10)
+            detections = decode(outputs['hm_cen'], outputs['cen_offset'], outputs['direction'], outputs['z_coor'],
+                                outputs['dim'], K=configs.K)
+            detections = detections.cpu().numpy().astype(np.float32)
+            detections = post_processing(detections, configs)
+            detections = detections[0][1]
+            # t2 = time_synchronized() 
+
             #######
             ####### ID_S3_EX1-5 END #######     
 
@@ -216,6 +236,10 @@ def detect_objects(input_bev_maps, model, configs):
     # Extract 3d bounding boxes from model response
     print("student task ID_S3_EX2")
     objects = [] 
+
+    # if detections.size > 0:
+    #     for detection in detections:
+
 
     ## step 1 : check whether there are any detections
 
