@@ -174,6 +174,7 @@ def create_model(configs):
     # set model to evaluation state
     configs.device = torch.device('cpu' if configs.no_cuda else 'cuda:{}'.format(configs.gpu_idx))
     model = model.to(device=configs.device)  # load model to either cpu or gpu
+    out_cap = None
     model.eval()          
 
     return model
@@ -189,12 +190,12 @@ def detect_objects(input_bev_maps, model, configs):
     with torch.no_grad():  
 
         # perform inference
-        outputs = model(input_bev_maps)
 
         # decode model output into target object format
         if 'darknet' in configs.arch:
 
             # perform post-processing
+            outputs = model(input_bev_maps)
             output_post = post_processing_v2(outputs, conf_thresh=configs.conf_thresh, nms_thresh=configs.nms_thresh) 
             detections = []
             for sample_i in range(len(output_post)):
@@ -215,7 +216,8 @@ def detect_objects(input_bev_maps, model, configs):
 
             # perform post-processing
 
-            # t1 = time_synchronized()
+            t1 = time_synchronized()
+            outputs = model(input_bev_maps)
             outputs['hm_cen'] = _sigmoid(outputs['hm_cen'])
             outputs['cen_offset'] = _sigmoid(outputs['cen_offset'])
             # detections size (batch_size, K, 10)
@@ -223,32 +225,42 @@ def detect_objects(input_bev_maps, model, configs):
                                 outputs['dim'], K=configs.K)
             detections = detections.cpu().numpy().astype(np.float32)
             detections = post_processing(detections, configs)
-            detections = detections[0][1]
-            # t2 = time_synchronized() 
+            t2 = time_synchronized() 
 
+            detections = detections[0]
             #######
             ####### ID_S3_EX1-5 END #######     
 
             
-
     ####### ID_S3_EX2 START #######     
     #######
     # Extract 3d bounding boxes from model response
     print("student task ID_S3_EX2")
     objects = [] 
 
-    # if detections.size > 0:
-    #     for detection in detections:
+    ## detections contains an array of length 3 where 0 pertains to pidestrians, 1 is vehicles and 2 is cyclests. 
+    ## Each array can contain a list of detections
 
+    ## step 2 : loop over all detections
+    for cls_id in range(configs.num_classes):
+        ## step 1 : check whether there are any detections
+        if len(detections[cls_id]) > 0:
+            for det in detections[cls_id]:
+                ## step 3 : perform the conversion using the limits for x, y and z set in the configs structure
+                # (scores-0:1, x-1:2, y-2:3, z-3:4, dim-4:7, yaw-7:8)
+                _score, _x, _y, _z, _h, _w, _l, _yaw = det
+                _yaw = -_yaw
+                bound_size_x = configs.lim_x[1] - configs.lim_x[0]
+                bound_size_y = configs.lim_y[1] - configs.lim_y[0]
+                x = _y / configs.bev_height * bound_size_x + configs.lim_x[0]
+                y = _x / configs.bev_width * bound_size_y + configs.lim_y[0]
+                z = _z + configs.lim_z[0]
+                w = _w / configs.bev_width * bound_size_y
+                l = _l / configs.bev_height * bound_size_x
+                
+                ## step 4 : append the current object to the 'objects' array
+                objects.append([cls_id, x, y, z, _h, w, l, _yaw])
 
-    ## step 1 : check whether there are any detections
-
-        ## step 2 : loop over all detections
-        
-            ## step 3 : perform the conversion using the limits for x, y and z set in the configs structure
-        
-            ## step 4 : append the current object to the 'objects' array
-        
     #######
     ####### ID_S3_EX2 START #######   
     
