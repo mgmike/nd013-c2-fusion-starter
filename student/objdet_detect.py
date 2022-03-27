@@ -51,6 +51,7 @@ def load_configs_model(model_name='darknet', configs=None):
         configs.batch_size = 4
         configs.cfgfile = os.path.join(configs.model_path, 'config', 'complex_yolov4.cfg')
         configs.conf_thresh = 0.5
+        configs.num_classes = 3
         configs.distributed = False
         configs.img_size = 608
         configs.nms_thresh = 0.4
@@ -112,6 +113,9 @@ def load_configs_model(model_name='darknet', configs=None):
     configs.no_cuda = True # if true, cuda is not used
     configs.gpu_idx = 0  # GPU index to use.
     configs.device = torch.device('cpu' if configs.no_cuda else 'cuda:{}'.format(configs.gpu_idx))
+    
+    # Evaluation params
+    configs.min_iou = 0.5
 
     return configs
 
@@ -183,8 +187,31 @@ def time_synchronized():
     torch.cuda.synchronize() if torch.cuda.is_available() else None
     return time.time()
 
+def extract_3d_bb(det, configs, cls_id = 1):
+    ## step 3 : perform the conversion using the limits for x, y and z set in the configs structure
+    # (scores-0:1, x-1:2, y-2:3, z-3:4, dim-4:7, yaw-7:8)
+    _score, _x, _y, _z, _h, _w, _l, _yaw = det
+    _yaw = -_yaw
+    bound_size_x = configs.lim_x[1] - configs.lim_x[0]
+    bound_size_y = configs.lim_y[1] - configs.lim_y[0]
+    x = _y / configs.bev_height * bound_size_x + configs.lim_x[0]
+    y = _x / configs.bev_width * bound_size_y + configs.lim_y[0]
+    z = _z + configs.lim_z[0]
+    w = _w / configs.bev_width * bound_size_y
+    l = _l / configs.bev_height * bound_size_x
+    if x < configs.lim_x[0]  or x > configs.lim_x[1] or y < configs.lim_y[0] or y > configs.lim_y[1]:
+        return []
+    else:
+        return [cls_id, x, y, z, _h, w, l, _yaw]
+
 # detect trained objects in birds-eye view
 def detect_objects(input_bev_maps, model, configs):
+
+    ####### ID_S3_EX2 START #######     
+    #######
+    # Extract 3d bounding boxes from model response
+    print("student task ID_S3_EX2")
+    objects = [] 
 
     # deactivate autograd engine during test to reduce memory usage and speed up computations
     with torch.no_grad():  
@@ -206,6 +233,11 @@ def detect_objects(input_bev_maps, model, configs):
                     x, y, w, l, im, re, _, _, _ = obj
                     yaw = np.arctan2(im, re)
                     detections.append([1, x, y, 0.0, 1.50, w, l, yaw])    
+
+            for det in detections:
+                obj = extract_3d_bb(det, configs)
+                if len(obj) > 0:
+                    objects.append(obj)
 
         elif 'fpn_resnet' in configs.arch:
             # decode output and perform post-processing
@@ -231,38 +263,19 @@ def detect_objects(input_bev_maps, model, configs):
             #######
             ####### ID_S3_EX1-5 END #######     
 
-            
-    ####### ID_S3_EX2 START #######     
-    #######
-    # Extract 3d bounding boxes from model response
-    print("student task ID_S3_EX2")
-    objects = [] 
+            ## detections contains an array of length 3 where 0 pertains to pidestrians, 1 is vehicles and 2 is cyclests. 
+            ## Each array can contain a list of detections
 
-    ## detections contains an array of length 3 where 0 pertains to pidestrians, 1 is vehicles and 2 is cyclests. 
-    ## Each array can contain a list of detections
-
-    ## step 2 : loop over all detections
-    for cls_id in range(configs.num_classes):
-        ## step 1 : check whether there are any detections
-        if len(detections[cls_id]) > 0:
-            for det in detections[cls_id]:
-                ## step 3 : perform the conversion using the limits for x, y and z set in the configs structure
-                # (scores-0:1, x-1:2, y-2:3, z-3:4, dim-4:7, yaw-7:8)
-                _score, _x, _y, _z, _h, _w, _l, _yaw = det
-                _yaw = -_yaw
-                bound_size_x = configs.lim_x[1] - configs.lim_x[0]
-                bound_size_y = configs.lim_y[1] - configs.lim_y[0]
-                x = _y / configs.bev_height * bound_size_x + configs.lim_x[0]
-                y = _x / configs.bev_width * bound_size_y + configs.lim_y[0]
-                z = _z + configs.lim_z[0]
-                w = _w / configs.bev_width * bound_size_y
-                l = _l / configs.bev_height * bound_size_x
-                
-                ## step 4 : append the current object to the 'objects' array
-                objects.append([cls_id, x, y, z, _h, w, l, _yaw])
-
-    #######
-    ####### ID_S3_EX2 START #######   
+            ## step 2 : loop over all detections
+            for cls_id in range(configs.num_classes):
+                ## step 1 : check whether there are any detections
+                if len(detections[cls_id]) > 0:
+                    for det in detections[cls_id]:
+                        ## step 4 : append the current object to the 'objects' array
+                        obj = extract_3d_bb(det, configs)
+                        if len(obj) > 0:
+                            objects.append(obj)
+ 
     
     return objects    
 

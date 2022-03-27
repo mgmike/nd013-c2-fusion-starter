@@ -114,7 +114,7 @@ def show_range_image(frame, lidar_name):
 
 
 # create birds-eye view of lidar data
-def bev_from_pcl(lidar_pcl, configs):
+def bev_from_pcl(lidar_pcl, configs, viz=True):
 
     # remove lidar points outside detection area and with too low reflectivity
     mask = np.where((lidar_pcl[:, 0] >= configs.lim_x[0]) & (lidar_pcl[:, 0] <= configs.lim_x[1]) &
@@ -144,7 +144,8 @@ def bev_from_pcl(lidar_pcl, configs):
     lidar_pcl_copy[:, 1] = np.int_(np.floor(lidar_pcl_copy[:, 1] / meters_pixel_y) + (configs.bev_width + 1) / 2)
 
     # step 4 : visualize point-cloud using the function show_pcl from a previous task
-    show_pcl(lidar_pcl_copy)
+    if viz:
+        show_pcl(lidar_pcl_copy)
     
     #######
     ####### ID_S2_EX1 END #######     
@@ -172,24 +173,29 @@ def bev_from_pcl(lidar_pcl, configs):
     ##          make sure that the intensity is scaled in such a way that objects of interest (e.g. vehicles) are clearly visible    
     ##          also, make sure that the influence of outliers is mitigated by normalizing intensity on the difference between the max. and min. value within the point cloud
     # intensity_map[np.int_(lidar_pcl_top[:, 0]), np.int_(lidar_pcl_top[:, 1])] = lidar_pcl_top[:, 3] / (np.amax(lidar_pcl_top[:, 3]) - np.amin(lidar_pcl_top[:, 3]))
-    minv = np.min(lidar_pcl_top[:,3])
-    maxv = np.max(lidar_pcl_top[:,3])
-    print(minv, maxv)
 
     lidar_pcl_top_copy = np.copy(lidar_pcl_top[:,3])
 
-    pbot = np.percentile(lidar_pcl_top_copy, 10)
-    ptop = np.percentile(lidar_pcl_top_copy, 90)
-    mean = np.mean(lidar_pcl_top_copy)
-    std = np.std(lidar_pcl_top_copy)
+    mean = 0.114370
+    std = 0.12
+    if viz:
+        mean = np.mean(lidar_pcl_top_copy)
+        std = np.std(lidar_pcl_top_copy)
+
     devs = 3
     min = 0 if (mean - devs * std) < 0 else mean - devs * std
     max = 1 if (mean + devs * std) > 1 else mean + devs * std
 
-    span = ptop - pbot
-    print('span: %f, mean: %f, standard deviation: %f' %(span, mean, std))
-    print('percentile, 90: %f, 10: %f' %(ptop, pbot))
-    print('lower std: %f, upper std: %f' %(min, max))
+    if viz:
+        minv = np.min(lidar_pcl_top[:,3])
+        maxv = np.max(lidar_pcl_top[:,3])
+        pbot = np.percentile(lidar_pcl_top_copy, 10)
+        ptop = np.percentile(lidar_pcl_top_copy, 90)
+        span = ptop - pbot
+        print(minv, maxv)
+        print('span: %f, mean: %f, standard deviation: %f' %(span, mean, std))
+        print('percentile, 90: %f, 10: %f' %(ptop, pbot))
+        print('lower std: %f, upper std: %f' %(min, max))
 
     # scale_log = np.frompyfunc(lambda x: 0 if x == 1 else -1 / np.log10(x))
 
@@ -201,16 +207,18 @@ def bev_from_pcl(lidar_pcl, configs):
     intensity_map = np.zeros((configs.bev_height + 1, configs.bev_width + 1))
     intensity_map[np.int_(lidar_pcl_top[:, 0]), np.int_(lidar_pcl_top[:, 1])] = lidar_pcl_top_copy_post
 
-    analyze({'before': lidar_pcl_top_copy, 'after': lidar_pcl_top_copy_post}, title='Intensity Distribution', nqp=False)
+    if viz:
+        analyze({'before': lidar_pcl_top_copy, 'after': lidar_pcl_top_copy_post}, title='Intensity Distribution', nqp=False)
 
     ## step 5 : temporarily visualize the intensity map using OpenCV to make sure that vehicles separate well from the background
     img_intensity = intensity_map * 255
     img_intensity = img_intensity.astype(np.uint8)
-    while (1):
-        cv2.imshow('img_intensity', img_intensity)
-        if cv2.waitKey(10) & 0xFF == 27:
-            break
-    cv2.destroyAllWindows
+    if viz:
+        while (1):
+            cv2.imshow('img_intensity', img_intensity)
+            if cv2.waitKey(10) & 0xFF == 27:
+                break
+        cv2.destroyAllWindows
 
     #######
     ####### ID_S2_EX2 END ####### 
@@ -234,11 +242,12 @@ def bev_from_pcl(lidar_pcl, configs):
     ## step 3 : temporarily visualize the intensity map using OpenCV to make sure that vehicles separate well from the background
     img_height = height_map * 256
     img_height = img_height.astype(np.uint8)
-    while (1):
-        cv2.imshow('img_height', img_height)
-        if cv2.waitKey(10) & 0xFF == 27:
-            break
-    cv2.destroyAllWindows
+    if viz:
+        while (1):
+            cv2.imshow('img_height', img_height)
+            if cv2.waitKey(10) & 0xFF == 27:
+                break
+        cv2.destroyAllWindows
 
     #######
     ####### ID_S2_EX3 END #######       
