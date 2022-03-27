@@ -36,6 +36,13 @@ The two vehicles in the foreground of Figure 5 are very well defined by the lida
 
 Figure 5: close car cuts off far car
 
+In addition, for step ID_S2_EX2, I scaled the intensity values to 3 standard deviations. The results can be seen in the distribution in Figure 6. Before the scaling, the mean and standard deviation of the intensity values were 0.1361 and 0.1493 respectively. After, they were 0.2222 and 0.2036 respectively
+
+![Figure 6: bev intensity distributions](images/figure6.png)
+
+Figure 6: bev intensity distributions
+
+
 
 ### 1. Write a short recap of the four tracking steps and what you implemented there (filter, track management, association, camera fusion). Which results did you achieve? Which part of the project was most difficult for you to complete, and why?
 
