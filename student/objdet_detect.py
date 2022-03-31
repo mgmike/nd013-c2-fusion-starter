@@ -207,8 +207,7 @@ def extract_3d_bb(det, configs, cls_id = 1):
 # detect trained objects in birds-eye view
 def detect_objects(input_bev_maps, model, configs):
 
-    ####### ID_S3_EX2 START #######     
-    #######
+    
     # Extract 3d bounding boxes from model response
     print("student task ID_S3_EX2")
     objects = [] 
@@ -263,6 +262,9 @@ def detect_objects(input_bev_maps, model, configs):
             #######
             ####### ID_S3_EX1-5 END #######     
 
+            ####### ID_S3_EX2 START #######     
+            #######
+            
             ## detections contains an array of length 3 where 0 pertains to pidestrians, 1 is vehicles and 2 is cyclests. 
             ## Each array can contain a list of detections
 
