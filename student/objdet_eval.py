@@ -72,11 +72,20 @@ def measure_detection_performance(detections, labels, labels_valid, min_iou=0.5)
             for det in detections:
                 ## step 3 : extract the four corners of the current detection
                 _id, x, y, z, _h, w, l, yaw = det
-                x = x.numpy()
-                y = y.numpy()
-                w = w.numpy()
-                l = l.numpy()
-                yaw = yaw.numpy()
+                if type(x) is not float:
+                    x = x.numpy()
+                
+                if type(y) is not float:
+                    y = y.numpy()
+
+                if type(w) is not float:
+                    w = w.numpy()
+
+                if type(l) is not float:
+                    l = l.numpy()
+
+                if type(yaw) is not float:
+                    yaw = yaw.numpy()
 
                 box_d = tools.compute_box_corners(x, y, w, l, yaw)
 
