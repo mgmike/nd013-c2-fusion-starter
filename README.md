@@ -87,9 +87,14 @@ Once you have done so, please [click here](https://console.cloud.google.com/stor
 
 The sequences listed above can be found in the folder "training". Please download them and put the `tfrecord`-files into the `dataset` folder of this project.
 
+The files are downloaded locally to ~/Documents/udacity_av/data/results. Link it to the results file in the project.
+
+`ln -s /media/mike/Storage/Documents/udacity_av/data/results/* .`
+
 
 ### Pre-Trained Models
 The object detection methods used in this project use pre-trained models which have been provided by the original authors. They can be downloaded [here](https://drive.google.com/file/d/1Pqx7sShlqKSGmvshTYbNDcUEYyZwfn3A/view?usp=sharing) (darknet) and [here](https://drive.google.com/file/d/1RcEfUIF1pzDZco8PJkZ10OL-wLL2usEj/view?usp=sharing) (fpn_resnet). Once downloaded, please copy the model files into the paths `/tools/objdet_models/darknet/pretrained` and `/tools/objdet_models/fpn_resnet/pretrained` respectively.
+
 
 ### Using Pre-Computed Results
 
