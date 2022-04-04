@@ -16,6 +16,22 @@ and for non-linear camera: z(3x1) - f(x)(3x1)
 
 Predict and Update
 
+### Track management
+
+The track management part of the project is conducted on a scenario where only one vehicle is entering and exiting the frame. The first step was replacing the hard coded x and P values with the updated values from the measurement. This part is different from the exercises as 3 dimentions are being considered instead of only 2. The track is then given a score and listed as initialized. 
+
+Next, inside the manage_track function, a list of indexes to tracks from the tracks list which are unassigned are passed in. All tracks in the track lists that are indexed by the unassigned tracks list, will have their score reduced in this step. Old tracks that have left the area and whose scores are below a threshold will be deleted.
+
+Lastly, the score is increased if the measurement is in frame and if the score surpasses a threshold, it's state is updated to tentitive or confirmed.
+
+![Multi target tracking flow](images/mtt-data-flow.png)
+
+Multi target tracking flow
+
+![Single target management](images/single_track_manage.gif)
+
+Single target management
+
 ## 2. Do you see any benefits in camera-lidar fusion compared to lidar-only tracking (in theory and in your concrete results)? 
 
 
