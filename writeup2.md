@@ -32,6 +32,24 @@ Multi target tracking flow
 
 Single target management
 
+![Single target RMSE](images/single_track_RSME.png)
+
+Single target RMSE
+
+### Association
+
+The first part of the association step is to create an association matrix of Mahalanobis distances between each track and each measurement. A gating fucntion is also used to ensure that a track prediction is close to the measurement. 
+
+In the next step, the minimum value is found and the track column and measurement row corrisponding to that association are removed from the association matrix and from their unassigned list.
+
+![Multi target association](images/multi_track_association.gif)
+
+Multi target association
+
+![Multi target RMSE](images/multi_track_RMSE.png)
+
+Multi target RMSE
+
 ## 2. Do you see any benefits in camera-lidar fusion compared to lidar-only tracking (in theory and in your concrete results)? 
 
 
