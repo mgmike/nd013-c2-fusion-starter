@@ -176,14 +176,13 @@ class Measurement:
             # Step 4: initialize camera measurement including z and R 
             ############
 
-            sigma_lidar_x = params.sigma_lidar_x # load params
-            sigma_lidar_y = params.sigma_lidar_y
-            sigma_lidar_z = params.sigma_lidar_z
+            sigma_cam_i = params.sigma_cam_i # load params
+            sigma_cam_j = params.sigma_cam_j
             self.z = np.zeros((sensor.dim_meas, 1))
             self.z[0] = z[0]
             self.z[1] = z[1]
-            self.R = np.matrix([[sigma_lidar_x**2, 0], # measurement noise covariance matrix
-                                [0, sigma_lidar_y**2]])
+            self.R = np.matrix([[sigma_cam_i**2, 0], # measurement noise covariance matrix
+                                [0, sigma_cam_j**2]])
             
 
             ############
