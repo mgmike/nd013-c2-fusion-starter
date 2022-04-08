@@ -53,7 +53,7 @@ class Association:
             for n in self.unassigned_tracks:
                 for m in self.unassigned_meas:
                     MHD = self.MHD(track_list[n], meas_list[m], KF)
-                    if self.gating(MHD, meas_list[m]):
+                    if self.gating(MHD, meas_list[m].sensor):
                         self.association_matrix[n, m] = MHD
         
         ############
@@ -95,7 +95,7 @@ class Association:
         # Step 3: return True if measurement lies inside gate, otherwise False
         ############
         
-        limit = chi2.ppf(params.gating_threshold, 2)
+        limit = chi2.ppf(params.gating_threshold, sensor.dim_meas)
         if MHD < limit:
             return True
         else:
