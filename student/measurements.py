@@ -44,11 +44,19 @@ class Sensor:
     def in_fov(self, x):
         # check if an object x can be seen by this sensor
         ############
-        # TODO Step 4: implement a function that returns True if x lies in the sensor's field of view, 
+        # Step 4: implement a function that returns True if x lies in the sensor's field of view, 
         # otherwise False.
         ############
 
-        return True
+        x_s = x[0:4]
+        x_s[3] = 1
+        x_v = self.veh_to_sens * x_s
+        if x_v[0] != 0:
+            alpha = np.arctan(x_v[1] / x_v[0])
+            if alpha > self.fov[0] and alpha < self.fov[1]:
+                return True
+
+        return False
         
         ############
         # END student code
@@ -64,14 +72,27 @@ class Sensor:
         elif self.name == 'camera':
             
             ############
-            # TODO Step 4: implement nonlinear camera measurement function h:
+            # Step 4: implement nonlinear camera measurement function h:
             # - transform position estimate from vehicle to camera coordinates
             # - project from camera to image coordinates
             # - make sure to not divide by zero, raise an error if needed
             # - return h(x)
             ############
 
-            pass
+            pos_veh = np.ones((4,1))
+            pos_veh[0:3] = x[0:3]
+            pos_sens = self.veh_to_sens * pos_veh
+
+            hx = np.zeros((self.dim_meas,1))
+            px, py, pz = x
+
+            if px == 0:
+                raise NameError('Jacobain is not defined for px=0!')
+            else:
+                hx[0] = self.c_i - (self.f_i * py) / px
+                hx[1] = self.c_j - (self.f_j * pz) / px
+            
+            return hx            
         
             ############
             # END student code
@@ -112,12 +133,11 @@ class Sensor:
     def generate_measurement(self, num_frame, z, meas_list):
         # generate new measurement from this sensor and add to measurement list
         ############
-        # TODO Step 4: remove restriction to lidar in order to include camera as well
+        # Step 4: remove restriction to lidar in order to include camera as well
         ############
         
-        if self.name == 'lidar':
-            meas = Measurement(num_frame, z, self)
-            meas_list.append(meas)
+        meas = Measurement(num_frame, z, self)
+        meas_list.append(meas)
         return meas_list
         
         ############
@@ -153,11 +173,19 @@ class Measurement:
         elif sensor.name == 'camera':
             
             ############
-            # TODO Step 4: initialize camera measurement including z and R 
+            # Step 4: initialize camera measurement including z and R 
             ############
 
-            pass
-        
+            sigma_lidar_x = params.sigma_lidar_x # load params
+            sigma_lidar_y = params.sigma_lidar_y
+            sigma_lidar_z = params.sigma_lidar_z
+            self.z = np.zeros((sensor.dim_meas, 1))
+            self.z[0] = z[0]
+            self.z[1] = z[1]
+            self.R = np.matrix([[sigma_lidar_x**2, 0], # measurement noise covariance matrix
+                                [0, sigma_lidar_y**2]])
+            
+
             ############
             # END student code
             ############ 

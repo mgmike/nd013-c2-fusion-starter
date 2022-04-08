@@ -125,10 +125,7 @@ class Trackmanagement:
         # decrease score for unassigned tracks
         for i in unassigned_tracks:
             track = self.track_list[i]
-            # check visibility with any measurement in the list since the in_fov func does not depend on the particular instance
-            if meas_list: # if not empty
-                if meas_list[0].sensor.in_fov(track.x):
-                    track.score = track.score - 1/params.window
+            track.score = track.score - 1/params.window
 
         # delete old tracks   
         for track in self.track_list:

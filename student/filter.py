@@ -30,7 +30,7 @@ class Filter:
 
     def F(self):
         ############
-        # TODO Step 1: implement and return system matrix F
+        # Step 1: implement and return system matrix F
         ############
         dt = params.dt
         return np.matrix([[1,0,0,dt,0,0],
@@ -46,7 +46,7 @@ class Filter:
 
     def Q(self):
         ############
-        # TODO Step 1: implement and return process noise covariance Q
+        # Step 1: implement and return process noise covariance Q
         ############
         dt = params.dt
         q = params.q
@@ -66,7 +66,7 @@ class Filter:
 
     def predict(self, track):
         ############
-        # TODO Step 1: predict state x and estimation error covariance P to next timestep, save x and P in track
+        # Step 1: predict state x and estimation error covariance P to next timestep, save x and P in track
         ############
 
         F = self.F()
@@ -81,7 +81,7 @@ class Filter:
 
     def update(self, track, meas):
         ############
-        # TODO Step 1: update state x and covariance P with associated measurement, save x and P in track
+        # Step 1: update state x and covariance P with associated measurement, save x and P in track
         ############
         
         x = track.x
@@ -93,7 +93,7 @@ class Filter:
         H_t = H.transpose()
         K = P * H_t * np.linalg.inv(self.S(track, meas, H))
         I = np.identity(params.dim_state)
-        track.set_x(x + K * self.gamma(track, meas))
+        track.set_x(x + K * self.gamma(track, meas)) # gamma is transformation of state estimation to measurement state
         track.set_P((I - K * H) * P)
 
         ############
@@ -103,7 +103,7 @@ class Filter:
     
     def gamma(self, track, meas):
         ############
-        # TODO Step 1: calculate and return residual gamma
+        # Step 1: calculate and return residual gamma
         ############
 
         x = track.x[0:3] # 6x1
@@ -121,7 +121,7 @@ class Filter:
 
     def S(self, track, meas, H):
         ############
-        # TODO Step 1: calculate and return covariance of residual S
+        # Step 1: calculate and return covariance of residual S
         ############
 
         H_t = H.transpose()
