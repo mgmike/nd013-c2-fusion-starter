@@ -33,7 +33,7 @@ sys.path.append(os.path.normpath(os.path.join(SCRIPT_DIR, PACKAGE_PARENT)))
 from tools.waymo_reader.simple_waymo_open_dataset_reader import label_pb2
     
 def plot_tracks(fig, ax, ax2, track_list, meas_list, lidar_labels, lidar_labels_valid, 
-                      image, camera, configs_det, state=None):
+                      image, camera, configs_det, meas_list_cam = None, state=None):
     
     # plot image
     ax.cla()
@@ -133,6 +133,22 @@ def plot_tracks(fig, ax, ax2, track_list, meas_list, lidar_labels, lidar_labels_
                 path, fill=False, color=col, linewidth=3)
             ax2.add_patch(p)
         
+    # plot all camera measurements 
+    if meas_list_cam != None:
+        for measc in meas_list_cam:
+            corners_2D = np.zeros((5,2))
+            corners_2D[0, :] = [measc.z[0] - measc.width / 2, measc.z[1] - measc.length / 2] # top left
+            corners_2D[1, :] = [measc.z[0] + measc.width / 2, measc.z[1] - measc.length / 2] # top right
+            corners_2D[2, :] = [measc.z[0] + measc.width / 2, measc.z[1] + measc.length / 2] # bottom right
+            corners_2D[3, :] = [measc.z[0] - measc.width / 2, measc.z[1] + measc.length / 2] # bottom left
+
+            codes = [Path.MOVETO, Path.LINETO, Path.LINETO, Path.LINETO, Path.CLOSEPOLY]
+            path = Path(corners_2D, codes)
+            
+            p = patches.PathPatch(path, fill=False, color='cyan', linewidth=3)
+            ax2.add_patch(p)
+
+
     # plot labels
     for label, valid in zip(lidar_labels, lidar_labels_valid):
         if valid:        
