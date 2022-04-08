@@ -33,22 +33,28 @@ class Association:
     def associate(self, track_list, meas_list, KF):
              
         ############
-        # TODO Step 3: association:
+        # Step 3: association:
         # - replace association_matrix with the actual association matrix based on Mahalanobis distance (see below) for all tracks and all measurements
         # - update list of unassigned measurements and unassigned tracks
         ############
         
-        # the following only works for at most one track and one measurement
-        self.association_matrix = np.matrix([]) # reset matrix
+        N = len(track_list) # N tracks
+        M = len(meas_list) # M measurements
         self.unassigned_tracks = [] # reset lists
         self.unassigned_meas = []
         
         if len(meas_list) > 0:
-            self.unassigned_meas = [0]
+            self.unassigned_meas = [a for a in range(len(meas_list))]
         if len(track_list) > 0:
-            self.unassigned_tracks = [0]
+            self.unassigned_tracks = [b for b in range(len(track_list))]
         if len(meas_list) > 0 and len(track_list) > 0: 
-            self.association_matrix = np.matrix([[0]])
+            self.association_matrix = np.inf * np.ones((N, M))
+
+            for n in self.unassigned_tracks:
+                for m in self.unassigned_meas:
+                    MHD = self.MHD(track_list[n], meas_list[m], KF)
+                    if self.gating(MHD, meas_list[m]):
+                        self.association_matrix[n, m] = MHD
         
         ############
         # END student code
@@ -56,21 +62,28 @@ class Association:
                 
     def get_closest_track_and_meas(self):
         ############
-        # TODO Step 3: find closest track and measurement:
+        # Step 3: find closest track and measurement:
         # - find minimum entry in association matrix
         # - delete row and column
         # - remove corresponding track and measurement from unassigned_tracks and unassigned_meas
         # - return this track and measurement
         ############
 
-        # the following only works for at most one track and one measurement
-        update_track = 0
-        update_meas = 0
+        min = np.min(self.association_matrix)
+        if min == np.inf:
+            return np.nan, np.nan
+
+        # find indecies for minimum entry in association matrix
+        n, m = np.unravel_index(self.association_matrix.argmin(), self.association_matrix.shape)
+        # remove row then column
+        self.association_matrix = np.delete(np.delete(self.association_matrix, n, 0), m, 1)
+        # Get  track and measurement to delete
+        update_track = self.unassigned_tracks[n]
+        update_meas = self.unassigned_meas[m]
         
-        # remove from list
+        # remove track and measurement from unassigned lists
         self.unassigned_tracks.remove(update_track) 
         self.unassigned_meas.remove(update_meas)
-        self.association_matrix = np.matrix([])
             
         ############
         # END student code
@@ -79,10 +92,14 @@ class Association:
 
     def gating(self, MHD, sensor): 
         ############
-        # TODO Step 3: return True if measurement lies inside gate, otherwise False
+        # Step 3: return True if measurement lies inside gate, otherwise False
         ############
         
-        pass    
+        limit = chi2.ppf(params.gating_threshold, 2)
+        if MHD < limit:
+            return True
+        else:
+            return False
         
         ############
         # END student code
@@ -90,10 +107,15 @@ class Association:
         
     def MHD(self, track, meas, KF):
         ############
-        # TODO Step 3: calculate and return Mahalanobis distance
+        # Step 3: calculate and return Mahalanobis distance
         ############
+
+        gamma = KF.gamma(track, meas) # In terms of z now
+        H = meas.sensor.get_H(track.x)
+        S = KF.S(track, meas, H) # Estimation error covariance P transformed to measurement space plus measurement covariance R
+        MHD = gamma.transpose() * np.linalg.inv(S) * gamma
         
-        pass
+        return MHD
         
         ############
         # END student code
