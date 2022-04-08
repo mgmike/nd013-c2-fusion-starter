@@ -43,7 +43,7 @@ from student.filter import Filter
 from student.trackmanagement import Trackmanagement
 from student.association import Association
 from student.measurements import Sensor, Measurement
-from misc.evaluation import plot_tracks, plot_rmse, make_movie
+from misc.evaluation import plot_tracks, plot_rmse, make_movie, plot_ped
 import misc.params as params 
  
 ##################
@@ -82,7 +82,7 @@ np.random.seed(10) # make random values predictable
 # exec_data = ['pcl_from_rangeimage'] # options are 'pcl_from_rangeimage', 'load_image' This is not needed, a check is conducted in make_exec_list
 exec_detection = [] # options are 'bev_from_pcl', 'detect_objects', 'validate_object_labels', 'measure_detection_performance'; options not in the list will be loaded from file
 exec_tracking = ['perform_tracking'] # options are 'perform_tracking'
-exec_visualization = ['show_tracks'] # options are 'show_range_image', 'show_bev', 'show_pcl', 'show_labels_in_image', 'show_objects_and_labels_in_bev', 'show_objects_in_bev_labels_in_camera', 'show_tracks', 'show_detection_performance', 'make_tracking_movie'
+exec_visualization = ['show_tracks', 'show_ped'] # options are 'show_range_image', 'show_bev', 'show_pcl', 'show_labels_in_image', 'show_objects_and_labels_in_bev', 'show_objects_in_bev_labels_in_camera', 'show_tracks', 'show_detection_performance', 'make_tracking_movie'
 exec_list = make_exec_list(exec_detection, exec_tracking, exec_visualization)
 vis_pause_time = 0 # set pause time between frames in ms (0 = stop between frames until key is pressed)
 
@@ -96,6 +96,9 @@ det_performance_all = []
 np.random.seed(0) # make random values predictable
 if 'show_tracks' in exec_list:    
     fig, (ax2, ax) = plt.subplots(1,2) # init track plot
+
+if 'show_ped' in exec_list:
+    fig2, (ax3) = plt.subplots(1,1)
 
 while True:
     try:
@@ -223,6 +226,7 @@ while True:
 
             # preprocess camera detections
             meas_list_cam = []
+            meas_list_ped = []
             for label in frame.camera_labels[0].labels:
                 if(label.type == label_pb2.Label.Type.TYPE_VEHICLE):
                 
@@ -232,6 +236,15 @@ while True:
                     z[0] = z[0] + np.random.normal(0, params.sigma_cam_i) 
                     z[1] = z[1] + np.random.normal(0, params.sigma_cam_j)
                     meas_list_cam = camera.generate_measurement(cnt_frame, z, meas_list_cam)
+
+                if(label.type == label_pb2.Label.Type.TYPE_PEDESTRIAN):
+                
+                    box = label.box
+                    # use camera labels as measurements and add some random noise
+                    z = [box.center_x, box.center_y, box.width, box.length]
+                    z[0] = z[0] + np.random.normal(0, params.sigma_cam_i) 
+                    z[1] = z[1] + np.random.normal(0, params.sigma_cam_j)
+                    meas_list_ped = camera.generate_measurement(cnt_frame, z, meas_list_ped)
             
             # Kalman prediction
             for track in manager.track_list:
@@ -262,6 +275,9 @@ while True:
                     fname = results_fullpath + '/tracking%03d.png' % cnt_frame
                     print('Saving frame', fname)
                     fig.savefig(fname)
+
+            if 'show_ped' in exec_list:
+                fig2, ax3 = plot_ped(fig2, ax3, image, meas_list_ped)
 
         # increment frame counter
         cnt_frame = cnt_frame + 1    

@@ -184,6 +184,32 @@ def plot_tracks(fig, ax, ax2, track_list, meas_list, lidar_labels, lidar_labels_
     
     return fig, ax, ax2
 
+def plot_ped(fig, ax, image, meas_list_ped):
+    ax.cla()
+    ax.imshow(image)
+    
+    # plot all camera measurements 
+    if meas_list_ped != None:
+        for measc in meas_list_ped:
+            corners_2D = np.zeros((5,2))
+            corners_2D[0, :] = [measc.z[0] - measc.width / 2, measc.z[1] - measc.length / 2] # top left
+            corners_2D[1, :] = [measc.z[0] + measc.width / 2, measc.z[1] - measc.length / 2] # top right
+            corners_2D[2, :] = [measc.z[0] + measc.width / 2, measc.z[1] + measc.length / 2] # bottom right
+            corners_2D[3, :] = [measc.z[0] - measc.width / 2, measc.z[1] + measc.length / 2] # bottom left
+
+            codes = [Path.MOVETO, Path.LINETO, Path.LINETO, Path.LINETO, Path.CLOSEPOLY]
+            path = Path(corners_2D, codes)
+            
+            p = patches.PathPatch(path, fill=False, color='red', linewidth=3)
+            ax.add_patch(p)
+
+    # maximize window        
+    mng = plt.get_current_fig_manager()
+    mng.frame.Maximize(True)
+
+    plt.pause(0.01)
+    return fig, ax
+
 
 def plot_rmse(manager, all_labels, configs_det):
     fig, ax = plt.subplots()
