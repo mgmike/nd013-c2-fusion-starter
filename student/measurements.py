@@ -84,7 +84,7 @@ class Sensor:
             pos_sens = self.veh_to_sens * pos_veh
 
             hx = np.zeros((self.dim_meas,1))
-            px, py, pz = x
+            px, py, pz, _, _, _ = x
 
             if px == 0:
                 raise NameError('Jacobain is not defined for px=0!')

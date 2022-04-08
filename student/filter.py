@@ -106,14 +106,18 @@ class Filter:
         # Step 1: calculate and return residual gamma
         ############
 
-        x = track.x[0:3] # 6x1
-        if meas.sensor.name == 'lidar':
-            H = meas.sensor.get_H(x)
-            return meas.z - H[0:3, 0:3] * x
-        elif meas.sensor.name == 'camera':
-            return meas.z - meas.sensor.get_hx(x)
+        # x = track.x[0:3] # 6x1
+        # if meas.sensor.name == 'lidar':
+        #     H = meas.sensor.get_H(x)
+        #     return meas.z - H[0:3, 0:3] * x
+        # elif meas.sensor.name == 'camera':
+        #     return meas.z - meas.sensor.get_hx(x)
         
-        return 0
+        # return 0
+
+        H = meas.sensor.get_hx(track.x)
+        gamma = meas.z - H
+        return gamma
         
         ############
         # END student code
