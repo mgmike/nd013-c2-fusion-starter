@@ -113,7 +113,7 @@ class Association:
         gamma = KF.gamma(track, meas) # In terms of z now
         H = meas.sensor.get_H(track.x)
         S = KF.S(track, meas, H) # Estimation error covariance P transformed to measurement space plus measurement covariance R
-        MHD = gamma.transpose() * np.linalg.inv(S) * gamma
+        MHD = np.sqrt(gamma.transpose() * np.linalg.inv(S) * gamma)
         
         return MHD
         
