@@ -22,6 +22,7 @@ import math
 import cv2
 import matplotlib.pyplot as plt
 import copy
+import time
 
 ## Add current working directory to path
 sys.path.append(os.getcwd())
@@ -82,7 +83,7 @@ np.random.seed(10) # make random values predictable
 # exec_data = ['pcl_from_rangeimage'] # options are 'pcl_from_rangeimage', 'load_image' This is not needed, a check is conducted in make_exec_list
 exec_detection = [] # options are 'bev_from_pcl', 'detect_objects', 'validate_object_labels', 'measure_detection_performance'; options not in the list will be loaded from file
 exec_tracking = ['perform_tracking'] # options are 'perform_tracking'
-exec_visualization = ['show_tracks'] # options are 'show_range_image', 'show_bev', 'show_pcl', 'show_labels_in_image', 'show_objects_and_labels_in_bev', 'show_objects_in_bev_labels_in_camera', 'show_tracks', 'show_detection_performance', 'make_tracking_movie'
+exec_visualization = ['show_tracks', 'make_tracking_movie'] # options are 'show_range_image', 'show_bev', 'show_pcl', 'show_labels_in_image', 'show_objects_and_labels_in_bev', 'show_objects_in_bev_labels_in_camera', 'show_tracks', 'show_detection_performance', 'make_tracking_movie'
 exec_list = make_exec_list(exec_detection, exec_tracking, exec_visualization)
 vis_pause_time = 0 # set pause time between frames in ms (0 = stop between frames until key is pressed)
 
@@ -255,9 +256,11 @@ while True:
             
             # visualization
             if 'show_tracks' in exec_list:
+                if cnt_frame < 2:
+                    time.sleep(2)
                 fig, ax, ax2 = plot_tracks(fig, ax, ax2, manager.track_list, meas_list_lidar, frame.laser_labels, 
                                         valid_label_flags, image, camera, configs_det, meas_list_cam = meas_list_cam)
-                if 'make_tracking_movie' in exec_list:
+                if 'make_tracking_movie' in exec_list and cnt_frame >= 2:
                     # save track plots to file
                     fname = results_fullpath + '/tracking%03d.png' % cnt_frame
                     print('Saving frame', fname)

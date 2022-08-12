@@ -124,17 +124,21 @@ class Trackmanagement:
         
         # decrease score for unassigned tracks
         for i in unassigned_tracks:
-            track = self.track_list[i]
-            track.score = track.score - 1/params.window
+            u = self.track_list[i]
+            if meas_list:
+                if meas_list[0].sensor.in_fov(u.x):
+                    u.score -= 1.0 / params.window
+            # else: 
+            #     u.score -= 1.0 / params.window
+            if u.score <= 0.0:
+                u.score = 0.0
 
         # delete old tracks   
         for track in self.track_list:
-            if track.state == 'confirmed':
-                if track.score < params.delete_threshold:
-                    self.delete_track(track)
-            elif track.state == 'tentative' or track.state == 'initialized':
-                if track.P[0, 0] > params.max_P or track.P[1, 1] > params.max_P or track.score < 0:
-                    self.delete_track(track)
+            if ((track.state in ['confirmed'] and track.score < params.delete_threshold) or
+                    ((track.P[0, 0] > params.max_P or track.P[1, 1] > params.max_P)) or
+                    track.score < 0.05):
+                self.delete_track(track)
 
         ############
         # END student code
@@ -165,12 +169,12 @@ class Trackmanagement:
         # - set track state to 'tentative' or 'confirmed'
         ############
 
-        if track.score < 0.9999999:
-            track.score += 1 / params.window
+        track.score += 1 / params.window
+        track.score = min(1.0, track.score)
 
         if track.score > params.confirmed_threshold:
             track.state = 'confirmed'
-        elif track.score > params.tentative_threshold:
+        else:
             track.state = 'tentative'
 
         
