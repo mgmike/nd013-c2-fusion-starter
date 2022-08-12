@@ -5,7 +5,7 @@
 ### Filter
 In the filter step, the prediction from the most recent measurement will be calculated. This prediction is compared to the next measurement using an Extended Kalman Filter and the result updates the track. 
 
-The prediction step follows the formula in the following image. The matrix F is the state transformation matrix and transforms data points from sensor space to measurement space. To caluclate the estimation error covariance matrix P, the process noise covariance Q is needed. The Q in the exercises was only a 2x2 matrix, however Q is a 6x6 matrix for this project as we are using the x, y and z positions and their corrisponding velocities. 
+The prediction step follows the formula in the following image. The matrix F is the state transformation matrix and transforms data points from sensor space to measurement space. To caluclate the estimation error covariance matrix P, the process noise covariance Q is needed. The Q in the exercises was only a 2x2 matrix, however Q is a 6x6 matrix for this project as the x, y and z positions and their corrisponding velocities are used. 
 
 To update the track, the residual gamma must be calculated. The gamma compares the new measurement, z with the state estimation. The gamma is used to calculate the updated x value along with the Kalman gain K and the covariance S.
 
@@ -14,7 +14,7 @@ To update the track, the residual gamma must be calculated. The gamma compares t
 
 Predict and Update  
 
-After implementing the predict and update functions for lidar only in a 3 dimentional space, the result is a mean RMSE error of 0.32. The error in the following image begins high, but reduces rapidly as the kalman filter is able to gather more information.
+After implementing the predict and update functions for lidar only in a 3 dimentional space, the result is a mean RMSE error of 0.32. The error in the following image begins high, but reduces as the kalman filter is able to gather more information.
 
 ![Tracking result](images/tracking_results.png)
 
@@ -63,7 +63,7 @@ The final step of the Sensor Fusion project is to add Camera fusion. This is imp
 
 To add the camera, the in_fov function will be implemented. When the sensor is initialized, the fov range will be applied depending on the type of sensor. The input x value is then converted from vehicle (global) coordinates to the sensor space. 
 
-Next, hx must be implemented for camera. The prediction x will first be converted from vehicle (global) coordinates to the sensor space. The x that is now in sensor space will be projected from the 3D sensor space to the 2D camera space where x and y corrispond to the x and y pixel of the image in the center of the vehicle. 
+Next, because camera data is non linear, matrix multiplication is not possible. Therefore, the hx function must be implemented for camera. The prediction x will first be converted from vehicle (global) coordinates to the sensor space. The x that is now in sensor space will be projected from the 3D sensor space to the 2D camera space where x and y corrispond to the x and y pixel of the image in the center of the vehicle. 
 
 Compared to the lidar only, the camera and lidar sensor fusion greatly reduced the RMSE of the 3rd vehicle while slightly increasing one of the first two.
 
